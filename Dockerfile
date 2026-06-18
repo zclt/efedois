@@ -7,6 +7,7 @@ RUN PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci
 
 COPY tsconfig.json .
 COPY src ./src
+COPY public ./public
 
 EXPOSE 3000
 
