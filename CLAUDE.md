@@ -5,11 +5,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Consultar um FII (ticker como argumento, padrão: MXRF11)
-npx tsx src/index.ts MXRF11
-npx tsx src/index.ts HGLG11
+# Servidor REST (porta padrão 3000)
+npm run server
+PORT=8080 npm run server   # porta customizada
 
-# Via npm scripts
+# Consultar via HTTP
+curl http://localhost:3000/fii/MXRF11
+curl http://localhost:3000/fii/HGLG11
+
+# CLI — consulta direta sem servidor
 npm start              # consulta MXRF11
 npm run fii -- XPLG11  # consulta ticker específico
 
@@ -24,7 +28,11 @@ Não há build step — `tsx` executa TypeScript diretamente. Não há testes au
 
 POC de scraping headless de FIIs (Fundos de Investimento Imobiliário) usando Playwright + TypeScript.
 
-**Fluxo:** `index.ts` recebe o ticker via CLI → `scraper.ts` abre Chromium headless e extrai dados do Status Invest → `formatter.ts` serializa para JSON e Markdown → arquivos salvos em `output/<TICKER>.{json,md}`.
+**Dois entry points:**
+- `server.ts` — servidor Fastify com `GET /fii/:ticker`, retorna `FIIData` como JSON (200) ou `{ erro, ticker }` (404)
+- `index.ts` — CLI que chama o mesmo scraper e salva arquivos em `output/<TICKER>.{json,md}`
+
+**Fluxo compartilhado:** ambos chamam `consultarFII(ticker)` em `scraper.ts` → `FIIResult` → formatado por `formatter.ts` (CLI) ou serializado direto (servidor).
 
 **Fonte de dados:** `statusinvest.com.br/fundos-imobiliarios/<ticker>`. O scraper usa `waitUntil: "domcontentloaded"` seguido de `waitForTimeout(2000)` — o site carrega os dados via SSR, não há XHR para aguardar.
 
