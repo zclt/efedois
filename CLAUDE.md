@@ -5,19 +5,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Servidor REST (porta padrão 3000)
-npm run server
-PORT=8080 npm run server   # porta customizada
+# Docker (recomendado para produção)
+docker compose up --build          # build + sobe na porta 3000
+PORT=8080 docker compose up        # porta customizada no host
+docker build -t efedois .          # só o build
+docker run -p 3000:3000 efedois    # run manual
+
+# Desenvolvimento local
+npm run server                     # servidor REST na porta 3000
+PORT=8080 npm run server
 
 # Consultar via HTTP
 curl http://localhost:3000/fii/MXRF11
-curl http://localhost:3000/fii/HGLG11
 
 # CLI — consulta direta sem servidor
-npm start              # consulta MXRF11
-npm run fii -- XPLG11  # consulta ticker específico
+npm start                          # consulta MXRF11
+npm run fii -- XPLG11              # consulta ticker específico
 
-# Instalar dependências (primeira vez)
+# Instalar dependências (primeira vez, apenas dev local)
 npm install
 npx playwright install chromium
 ```
