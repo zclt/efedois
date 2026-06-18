@@ -1,7 +1,17 @@
+import fs from "fs";
+import path from "path";
 import Fastify from "fastify";
 import { consultarFII } from "./scraper";
 
 const server = Fastify({ logger: true });
+
+server.get("/", async (_, reply) => {
+  const html = fs.readFileSync(
+    path.join(process.cwd(), "public", "index.html"),
+    "utf-8"
+  );
+  return reply.type("text/html").send(html);
+});
 
 server.get<{ Params: { ticker: string } }>(
   "/fii/:ticker",

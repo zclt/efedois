@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FII Monitor</title>
+  <style>
+    :root {
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --surface-2:   #21262d;
+      --border:      #30363d;
+      --text:        #e6edf3;
+      --muted:       #8b949e;
+      --accent:      #58a6ff;
+      --green:       #3fb950;
+      --green-dim:   rgba(63,185,80,0.12);
+      --yellow:      #d29922;
+      --yellow-dim:  rgba(210,153,34,0.12);
+      --red:         #f85149;
+      --red-dim:     rgba(248,81,73,0.12);
+      --radius:      8px;
+    }
+
+    html { font-size: 90%; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+      padding-bottom: 4px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .field-fiis { flex: 1; min-width: 240px; }
+
+    input[type="text"], select {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      font-size: 0.875rem;
+      width: 100%;
+    }
+
+    input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      border-radius: var(--radius);
+      padding: 8px 18px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+      align-self: flex-end;
+    }
+
+    .btn:hover  { opacity: 0.85; }
+    .btn:active { opacity: 0.7; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .status-bar {
+      margin-top: 10px;
+      display: flex;
+      gap: 20px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    #countdown { font-variant-numeric: tabular-nums; }
+
+    /* ── Grid ───────────────────────────────────────── */
+    main {
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── Card ───────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent)20; }
+
+    .card-updating { opacity: 0.6; pointer-events: none; }
+
+    /* card header */
+    .c-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .c-ticker { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .c-nome   { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+    .c-badge {
+      font-size: 0.68rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      color: var(--muted);
+      white-space: nowrap;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .c-refreshing-tag {
+      font-size: 0.65rem;
+      color: var(--accent);
+      opacity: 0.7;
+      margin-top: 3px;
+    }
+
+    /* price block */
+    .c-price {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .c-price-val {
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+
+    .c-price-cur { font-size: 0.9rem; color: var(--muted); margin-right: 2px; }
+
+    .c-var {
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .up   { color: var(--green); background: var(--green-dim); }
+    .down { color: var(--red);   background: var(--red-dim); }
+    .flat { color: var(--muted); }
+
+    /* metrics */
+    .c-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .c-metric {
+      padding: 10px 12px;
+      border-right: 1px solid var(--border);
+    }
+    .c-metric:last-child { border-right: none; }
+
+    .c-metric-lbl {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .c-metric-val {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 3px;
+    }
+
+    /* history */
+    .c-hist {
+      padding: 10px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      flex: 1;
+    }
+
+    .c-hist-title {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .c-hist-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .c-hist-row:first-of-type { border-top: none; }
+
+    .c-hist-time  { color: var(--muted); font-size: 0.72rem; min-width: 42px; }
+    .c-hist-price { font-weight: 600; }
+    .c-hist-var   { font-size: 0.75rem; text-align: right; min-width: 70px; }
+
+    .c-hist-cur-label {
+      font-size: 0.65rem;
+      background: var(--accent);
+      color: #0d1117;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
+    .c-no-hist { font-size: 0.78rem; color: var(--muted); font-style: italic; }
+
+    /* signal */
+    .c-signal { padding: 12px 16px; }
+
+    .c-signal-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+    }
+
+    .c-signal-label { font-weight: 700; font-size: 0.875rem; }
+
+    .c-signal-reasons {
+      list-style: none;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .c-signal-reasons li { padding: 1px 0; }
+    .c-signal-reasons li::before { content: '› '; color: var(--border); }
+
+    /* loading / error */
+    .c-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 16px;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.875rem;
+      flex: 1;
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .c-error-icon { font-size: 1.5rem; }
+
+    /* empty state */
+    .empty {
+      grid-column: 1/-1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 24px;
+      gap: 10px;
+      color: var(--muted);
+    }
+
+    .empty h2 { font-size: 1.1rem; color: var(--text); }
+    .empty p  { font-size: 0.875rem; }
+
+    /* footer */
+    footer {
+      text-align: center;
+      padding: 14px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div class="brand">📊 FII Monitor</div>
+
+    <div class="field field-fiis">
+      <label for="inp-fiis">FIIs monitorados (separados por vírgula)</label>
+      <input type="text" id="inp-fiis" placeholder="MXRF11, HGLG11, XPLG11">
+    </div>
+
+    <div class="field">
+      <label for="inp-interval">Intervalo</label>
+      <select id="inp-interval">
+        <option value="30">30 s</option>
+        <option value="60" selected>1 min</option>
+        <option value="120">2 min</option>
+        <option value="300">5 min</option>
+        <option value="600">10 min</option>
+      </select>
+    </div>
+
+    <button class="btn" id="btn-refresh">⟳ Atualizar</button>
+  </div>
+
+  <div class="status-bar">
+    <span id="last-updated">Aguardando primeira consulta…</span>
+    <span id="countdown"></span>
+  </div>
+</header>
+
+<main id="grid"></main>
+
+<footer>
+  Dados: Status Invest &nbsp;·&nbsp; Não constitui recomendação de investimento
+</footer>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+const CFG_KEY   = 'fiim_cfg';
+const HIST_KEY  = 'fiim_hist';
+const MAX_HIST  = 10;
+const HIST_SHOW = 3;
+
+// ── State ──────────────────────────────────────────────────────────────────
+let cfg        = { fiis: ['MXRF11', 'HGLG11'], intervalSec: 60 };
+let history    = {};   // { TICKER: FIIData[] }  newest first
+let cardState  = {};   // { TICKER: 'idle'|'loading'|'error'|FIIData }
+let refreshing = new Set();
+let timerId    = null;
+let countdown  = 0;
+
+// ── Storage ────────────────────────────────────────────────────────────────
+function loadCfg() {
+  try { Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY) || '{}')); } catch {}
+}
+function saveCfg() {
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+}
+function loadHistory() {
+  try { history = JSON.parse(localStorage.getItem(HIST_KEY) || '{}'); } catch {}
+}
+function saveHistory() {
+  localStorage.setItem(HIST_KEY, JSON.stringify(history));
+}
+function pushHistory(ticker, data) {
+  if (!history[ticker]) history[ticker] = [];
+  history[ticker].unshift(data);
+  history[ticker] = history[ticker].slice(0, MAX_HIST);
+  saveHistory();
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const parseBR = v => parseFloat((v || '0').replace(',', '.')) || 0;
+
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function varClass(v) {
+  const n = parseBR(v);
+  return n > 0 ? 'up' : n < 0 ? 'down' : 'flat';
+}
+
+function varIcon(v) {
+  const n = parseBR(v);
+  return n > 0 ? '▲' : n < 0 ? '▼' : '→';
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Signal ─────────────────────────────────────────────────────────────────
+function calcSignal(data, hist) {
+  const pvp   = parseBR(data.pvp);
+  const dy    = parseBR(data.dy_12m);
+  const preco = parseBR(data.preco_atual);
+
+  let score = 0;
+  const reasons = [];
+
+  // P/VP
+  if (pvp > 0) {
+    if      (pvp < 0.85)  { score += 3; reasons.push(`P/VP ${data.pvp} — muito abaixo do VPA`); }
+    else if (pvp < 0.95)  { score += 2; reasons.push(`P/VP ${data.pvp} — abaixo do VPA`); }
+    else if (pvp <= 1.05) { score += 1; reasons.push(`P/VP ${data.pvp} — próximo ao VPA`); }
+    else if (pvp >  1.15) { score -= 1; reasons.push(`P/VP ${data.pvp} — acima do VPA`); }
+  }
+
+  // DY
+  if (dy > 0) {
+    if      (dy >= 12) { score += 2; reasons.push(`DY ${data.dy_12m}% — rendimento excelente`); }
+    else if (dy >=  9) { score += 1; reasons.push(`DY ${data.dy_12m}% — rendimento bom`); }
+    else if (dy <   6) { score -= 1; reasons.push(`DY ${data.dy_12m}% — rendimento abaixo da média`); }
+  }
+
+  // Trend dos últimos snapshots
+  const prices = hist.slice(0, HIST_SHOW)
+    .map(h => parseBR(h.preco_atual))
+    .filter(p => p > 0);
+
+  if (prices.length >= 2 && preco > 0) {
+    const oldest = prices[prices.length - 1];
+    const trend  = (preco - oldest) / oldest;
+    if      (trend < -0.02) { score += 1; reasons.push('Preço em queda recente — possível oportunidade'); }
+    else if (trend >  0.03) {             reasons.push('Preço em alta recente'); }
+  }
+
+  if (score >= 4) return { label:'Excelente para comprar', icon:'🟢', color:'#3fb950', bg:'rgba(63,185,80,0.12)',  reasons };
+  if (score >= 2) return { label:'Bom para comprar',       icon:'🟡', color:'#d29922', bg:'rgba(210,153,34,0.12)', reasons };
+  if (score >= 0) return { label:'Neutro — aguardar',      icon:'⚪', color:'#8b949e', bg:'rgba(139,148,158,0.12)',reasons };
+  return               { label:'Avaliar com cuidado',      icon:'🔴', color:'#f85149', bg:'rgba(248,81,73,0.12)',  reasons };
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderCard(ticker) {
+  const state = cardState[ticker] || 'idle';
+  const hist  = (history[ticker] || []).slice(0, HIST_SHOW);
+  const isRef = refreshing.has(ticker);
+
+  // ── loading / idle ──
+  if (state === 'loading' || state === 'idle') {
+    return `<div class="card" id="card-${ticker}">
+      <div class="c-head">
+        <div><div class="c-ticker">${esc(ticker)}</div></div>
+      </div>
+      <div class="c-placeholder"><div class="spinner"></div><span>Consultando…</span></div>
+    </div>`;
+  }
+
+  // ── error ──
+  if (state === 'error') {
+    return `<div class="card" id="card-${ticker}">
+      <div class="c-head">
+        <div><div class="c-ticker">${esc(ticker)}</div></div>
+      </div>
+      <div class="c-placeholder">
+        <span class="c-error-icon">⚠️</span>
+        <span>Não foi possível obter dados</span>
+        <small>Verifique o ticker ou aguarde a próxima atualização</small>
+      </div>
+    </div>`;
+  }
+
+  // ── data ──
+  const d      = state;
+  const vc     = varClass(d.variacao_dia);
+  const vi     = varIcon(d.variacao_dia);
+  const signal = calcSignal(d, hist);
+  const vpa    = d.dados_adicionais?.['Val. patrim. p/cota'] ?? '—';
+
+  // History rows: show all HIST_SHOW entries newest-first
+  const histRows = hist.length === 0
+    ? `<div class="c-no-hist">Aguardando mais dados…</div>`
+    : hist.map((h, i) => {
+        const hvc = varClass(h.variacao_dia);
+        const hvi = varIcon(h.variacao_dia);
+        return `<div class="c-hist-row">
+          <span class="c-hist-time">${fmtTime(h.consultado_em)}</span>
+          <span class="c-hist-price">R$ ${esc(h.preco_atual ?? '—')}${i === 0 ? '<span class="c-hist-cur-label">agora</span>' : ''}</span>
+          <span class="c-hist-var ${hvc}">${hvi} ${esc(h.variacao_dia ?? '—')}</span>
+        </div>`;
+      }).join('');
+
+  return `<div class="card${isRef ? ' card-updating' : ''}" id="card-${ticker}">
+
+    <div class="c-head">
+      <div>
+        <div class="c-ticker">${esc(d.ticker)}</div>
+        <div class="c-nome">${esc(d.nome)}</div>
+        ${isRef ? '<div class="c-refreshing-tag">atualizando…</div>' : ''}
+      </div>
+      ${d.segmento ? `<span class="c-badge" title="${esc(d.segmento)}">${esc(d.segmento)}</span>` : ''}
+    </div>
+
+    <div class="c-price">
+      <div class="c-price-val"><span class="c-price-cur">R$</span>${esc(d.preco_atual ?? '—')}</div>
+      <span class="c-var ${vc}">${vi} ${esc(d.variacao_dia ?? '—')}</span>
+    </div>
+
+    <div class="c-metrics">
+      <div class="c-metric">
+        <div class="c-metric-lbl">DY 12M</div>
+        <div class="c-metric-val">${d.dy_12m ? esc(d.dy_12m) + '%' : '—'}</div>
+      </div>
+      <div class="c-metric">
+        <div class="c-metric-lbl">P/VP</div>
+        <div class="c-metric-val">${esc(d.pvp ?? '—')}</div>
+      </div>
+      <div class="c-metric">
+        <div class="c-metric-lbl">VPA</div>
+        <div class="c-metric-val">${esc(vpa)}</div>
+      </div>
+    </div>
+
+    <div class="c-hist">
+      <div class="c-hist-title">Últimas ${HIST_SHOW} consultas</div>
+      ${histRows}
+    </div>
+
+    <div class="c-signal">
+      <div class="c-signal-badge" style="background:${signal.bg};border:1px solid ${signal.color}40">
+        <span>${signal.icon}</span>
+        <span class="c-signal-label" style="color:${signal.color}">${signal.label}</span>
+      </div>
+      <ul class="c-signal-reasons">
+        ${signal.reasons.map(r => `<li>${esc(r)}</li>`).join('')}
+      </ul>
+    </div>
+  </div>`;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  if (cfg.fiis.length === 0) {
+    grid.innerHTML = `<div class="empty">
+      <h2>Nenhum FII configurado</h2>
+      <p>Digite os tickers acima separados por vírgula para começar.</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = cfg.fiis.map(renderCard).join('');
+}
+
+// ── Fetch ──────────────────────────────────────────────────────────────────
+async function fetchOne(ticker) {
+  const hasData = cardState[ticker] && cardState[ticker] !== 'loading'
+                                    && cardState[ticker] !== 'error'
+                                    && cardState[ticker] !== 'idle';
+
+  if (!hasData) { cardState[ticker] = 'loading'; }
+  else          { refreshing.add(ticker); }
+
+  renderGrid();
+
+  try {
+    const res = await fetch(`/fii/${ticker}`);
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    pushHistory(ticker, data);
+    cardState[ticker] = data;
+  } catch {
+    if (!hasData) cardState[ticker] = 'error';
+    // on refresh failure, keep showing existing data
+  }
+
+  refreshing.delete(ticker);
+  renderGrid();
+}
+
+async function refreshAll() {
+  document.getElementById('btn-refresh').disabled = true;
+  await Promise.all(cfg.fiis.map(fetchOne));
+  document.getElementById('last-updated').textContent =
+    'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('btn-refresh').disabled = false;
+}
+
+// ── Timer ──────────────────────────────────────────────────────────────────
+function startTimer() {
+  clearInterval(timerId);
+  countdown = cfg.intervalSec;
+  timerId = setInterval(() => {
+    countdown--;
+    const el = document.getElementById('countdown');
+    if (el) el.textContent = `Próxima atualização em ${countdown}s`;
+    if (countdown <= 0) {
+      countdown = cfg.intervalSec;
+      refreshAll();
+    }
+  }, 1000);
+}
+
+// ── Controls ───────────────────────────────────────────────────────────────
+document.getElementById('inp-fiis').addEventListener('change', e => {
+  const next = e.target.value
+    .split(',')
+    .map(s => s.trim().toUpperCase())
+    .filter(Boolean);
+
+  // init state only for new tickers
+  next.forEach(t => { if (!cardState[t]) cardState[t] = 'idle'; });
+
+  cfg.fiis = next;
+  saveCfg();
+  renderGrid();
+  refreshAll();
+});
+
+document.getElementById('inp-interval').addEventListener('change', e => {
+  cfg.intervalSec = parseInt(e.target.value);
+  saveCfg();
+  startTimer();
+});
+
+document.getElementById('btn-refresh').addEventListener('click', () => {
+  refreshAll();
+  countdown = cfg.intervalSec;
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadCfg();
+loadHistory();
+
+document.getElementById('inp-fiis').value = cfg.fiis.join(', ');
+document.getElementById('inp-interval').value = String(cfg.intervalSec);
+
+// Seed card states from existing history (so data shows immediately)
+cfg.fiis.forEach(t => {
+  cardState[t] = (history[t] || [])[0] || 'idle';
+});
+
+renderGrid();
+startTimer();
+refreshAll();
+</script>
+</body>
+</html>
