@@ -5,15 +5,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Consultar um FII (ticker como argumento, padrão: MXRF11)
-npx tsx src/index.ts MXRF11
-npx tsx src/index.ts HGLG11
+# Docker (recomendado para produção)
+docker compose up --build          # build + sobe na porta 3000
+PORT=8080 docker compose up        # porta customizada no host
+docker build -t efedois .          # só o build
+docker run -p 3000:3000 efedois    # run manual
 
-# Via npm scripts
-npm start              # consulta MXRF11
-npm run fii -- XPLG11  # consulta ticker específico
+# Desenvolvimento local
+npm run server                     # servidor REST na porta 3000
+PORT=8080 npm run server
 
-# Instalar dependências (primeira vez)
+# Consultar via HTTP
+curl http://localhost:3000/fii/MXRF11
+
+# CLI — consulta direta sem servidor
+npm start                          # consulta MXRF11
+npm run fii -- XPLG11              # consulta ticker específico
+
+# Instalar dependências (primeira vez, apenas dev local)
 npm install
 npx playwright install chromium
 ```
@@ -24,7 +33,11 @@ Não há build step — `tsx` executa TypeScript diretamente. Não há testes au
 
 POC de scraping headless de FIIs (Fundos de Investimento Imobiliário) usando Playwright + TypeScript.
 
-**Fluxo:** `index.ts` recebe o ticker via CLI → `scraper.ts` abre Chromium headless e extrai dados do Status Invest → `formatter.ts` serializa para JSON e Markdown → arquivos salvos em `output/<TICKER>.{json,md}`.
+**Dois entry points:**
+- `server.ts` — servidor Fastify com `GET /fii/:ticker`, retorna `FIIData` como JSON (200) ou `{ erro, ticker }` (404)
+- `index.ts` — CLI que chama o mesmo scraper e salva arquivos em `output/<TICKER>.{json,md}`
+
+**Fluxo compartilhado:** ambos chamam `consultarFII(ticker)` em `scraper.ts` → `FIIResult` → formatado por `formatter.ts` (CLI) ou serializado direto (servidor).
 
 **Fonte de dados:** `statusinvest.com.br/fundos-imobiliarios/<ticker>`. O scraper usa `waitUntil: "domcontentloaded"` seguido de `waitForTimeout(2000)` — o site carrega os dados via SSR, não há XHR para aguardar.
 

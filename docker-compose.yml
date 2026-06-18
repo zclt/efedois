@@ -1,0 +1,15 @@
+services:
+  api:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      PORT: "3000"
+      HOST: "0.0.0.0"
+    restart: unless-stopped
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:3000/fii/MXRF11"]
+    #   interval: 60s
+    #   timeout: 30s
+    #   retries: 3
+    #   start_period: 10s
