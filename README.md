@@ -4,6 +4,10 @@ POC para consulta automatizada de Fundos de Investimento Imobiliário (FIIs) com
 
 Inclui servidor REST, dashboard web com atualização automática e histórico persistido no navegador.
 
+## Screenshot
+
+![FII Monitor Dashboard](docs/screenshot.png)
+
 ## Funcionalidades
 
 - Scraping headless do [Status Invest](https://statusinvest.com.br) via Playwright/Chromium
