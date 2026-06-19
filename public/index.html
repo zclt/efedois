@@ -149,7 +149,8 @@
       border-bottom: 1px solid var(--border);
     }
 
-    .c-ticker { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .c-ticker { font-size: 1.1rem; font-weight: 700; color: var(--accent); text-decoration: none; }
+    .c-ticker:hover { text-decoration: underline; }
     .c-nome   { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
 
     .c-badge {
@@ -534,7 +535,7 @@ function renderCard(ticker) {
 
     <div class="c-head">
       <div>
-        <div class="c-ticker">${esc(d.ticker)}</div>
+        <a class="c-ticker" href="${esc(d.fonte)}" target="_blank" rel="noopener noreferrer">${esc(d.ticker)}</a>
         <div class="c-nome">${esc(d.nome)}</div>
         ${isRef ? '<div class="c-refreshing-tag">atualizando…</div>' : ''}
       </div>
