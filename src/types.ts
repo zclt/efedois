@@ -5,6 +5,7 @@ export interface FIIData {
   variacao_dia: string | null;
   dy_12m: string | null;
   pvp: string | null;
+  ultimo_dividendo: string | null;
   segmento: string | null;
   gestora: string | null;
   fonte: string;

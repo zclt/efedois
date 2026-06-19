@@ -46,12 +46,18 @@ async function extractStatusInvest(page: Page, ticker: string): Promise<Partial<
   const pvp = find(["P/VP"]);
   const segmento = findBySub(["Segmento"]) ?? find(["Segmento ANBIMA"]);
 
+  // Último rendimento: título fica no .card-title fora do .info, então usa seletor direto
+  const ultimo_dividendo = await page.$eval(
+    "#dy-info strong.value",
+    (el) => el.textContent?.trim() ?? null
+  ).catch(() => null);
+
   const dados_adicionais: Record<string, string> = {};
   for (const b of blocos) {
     if (b.titulo && b.valor) dados_adicionais[b.titulo] = b.valor;
   }
 
-  return { nome, preco_atual, variacao_dia, dy_12m, pvp, segmento, dados_adicionais };
+  return { nome, preco_atual, variacao_dia, dy_12m, pvp, segmento, ultimo_dividendo, dados_adicionais };
 }
 
 export async function consultarFII(ticker: string): Promise<FIIResult> {
@@ -81,6 +87,7 @@ export async function consultarFII(ticker: string): Promise<FIIResult> {
       variacao_dia: extraido.variacao_dia ?? null,
       dy_12m: extraido.dy_12m ?? null,
       pvp: extraido.pvp ?? null,
+      ultimo_dividendo: extraido.ultimo_dividendo ?? null,
       segmento: extraido.segmento ?? null,
       gestora: extraido.dados_adicionais?.["Administrador"] ?? null,
       fonte: url,
