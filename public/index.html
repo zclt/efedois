@@ -149,7 +149,8 @@
       border-bottom: 1px solid var(--border);
     }
 
-    .c-ticker { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .c-ticker { font-size: 1.1rem; font-weight: 700; color: var(--accent); text-decoration: none; }
+    .c-ticker:hover { text-decoration: underline; }
     .c-nome   { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
 
     .c-badge {
@@ -204,15 +205,17 @@
     /* metrics */
     .c-metrics {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       border-bottom: 1px solid var(--border);
     }
 
     .c-metric {
       padding: 10px 12px;
       border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
-    .c-metric:last-child { border-right: none; }
+    .c-metric:nth-child(2n) { border-right: none; }
+    .c-metric:nth-last-child(-n+2) { border-bottom: none; }
 
     .c-metric-lbl {
       font-size: 0.65rem;
@@ -532,7 +535,7 @@ function renderCard(ticker) {
 
     <div class="c-head">
       <div>
-        <div class="c-ticker">${esc(d.ticker)}</div>
+        <a class="c-ticker" href="${esc(d.fonte)}" target="_blank" rel="noopener noreferrer">${esc(d.ticker)}</a>
         <div class="c-nome">${esc(d.nome)}</div>
         ${isRef ? '<div class="c-refreshing-tag">atualizando…</div>' : ''}
       </div>
@@ -552,6 +555,10 @@ function renderCard(ticker) {
       <div class="c-metric">
         <div class="c-metric-lbl">P/VP</div>
         <div class="c-metric-val">${esc(d.pvp ?? '—')}</div>
+      </div>
+      <div class="c-metric">
+        <div class="c-metric-lbl">Últ. Dividendo</div>
+        <div class="c-metric-val">${d.ultimo_dividendo ? 'R$ ' + esc(d.ultimo_dividendo) : '—'}</div>
       </div>
       <div class="c-metric">
         <div class="c-metric-lbl">VPA</div>
