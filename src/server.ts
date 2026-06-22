@@ -54,6 +54,21 @@ server.get<{ Params: { ticker: string } }>(
   }
 );
 
+function resolveDefaultTickers(): string[] {
+  const env = process.env.DEFAULT_FIIS;
+  if (env) return env.split(",").map((t) => t.trim()).filter(Boolean);
+  return ["MXRF11"];
+}
+
+server.get("/fiis", async (_, reply) => {
+  const tickers = resolveDefaultTickers();
+  const results = await Promise.all(tickers.map((t) => consultarFII(t)));
+  const dados = results
+    .filter((r) => r.sucesso && r.dados)
+    .map((r) => r.dados);
+  return reply.send(dados);
+});
+
 const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? "0.0.0.0";
 
