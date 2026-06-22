@@ -13,12 +13,13 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@types/cheerio": "^0.22.35",
     "@types/node": "^25.9.3",
-    "playwright": "^1.61.0",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
     "fastify": "^5.8.5"
   }
 }

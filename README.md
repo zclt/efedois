@@ -1,6 +1,6 @@
 # FII Monitor
 
-POC para consulta automatizada de Fundos de Investimento Imobiliário (FIIs) com scraping headless via Playwright + TypeScript.
+POC para consulta automatizada de Fundos de Investimento Imobiliário (FIIs) com scraping via fetch + cheerio + TypeScript.
 
 Inclui servidor REST, dashboard web com atualização automática e histórico persistido no navegador.
 
@@ -10,7 +10,7 @@ Inclui servidor REST, dashboard web com atualização automática e histórico p
 
 ## Funcionalidades
 
-- Scraping headless do [Status Invest](https://statusinvest.com.br) via Playwright/Chromium
+- Scraping leve do [Status Invest](https://statusinvest.com.br) via `fetch` + `cheerio` (sem browser headless)
 - Retorno de dados em JSON e Markdown
 - Servidor REST com `GET /fii/:ticker`
 - Dashboard web com atualização automática configurável
@@ -26,7 +26,6 @@ Inclui servidor REST, dashboard web com atualização automática e histórico p
 
 ```bash
 npm install
-npx playwright install chromium
 ```
 
 ## Uso
@@ -55,14 +54,15 @@ curl http://localhost:3000/fii/MXRF11
 {
   "ticker": "MXRF11",
   "nome": "Maxi Renda",
-  "preco_atual": "9,68",
-  "variacao_dia": "0,21%",
-  "dy_12m": "12,33",
-  "pvp": "1,03",
+  "preco_atual": "9,75",
+  "variacao_dia": "0,62%",
+  "dy_12m": "12,26",
+  "pvp": "1,04",
+  "ultimo_dividendo": "0,1000",
   "segmento": "Papéis",
   "gestora": null,
   "fonte": "https://statusinvest.com.br/fundos-imobiliarios/mxrf11",
-  "consultado_em": "2026-06-18T19:37:44.303Z",
+  "consultado_em": "2026-06-20T19:02:59.464Z",
   "dados_adicionais": { ... }
 }
 ```
@@ -127,7 +127,7 @@ Pontuação: P/VP abaixo do VPA (+1 a +3), DY acima de 9% (+1 a +2), preço em q
 
 ```
 src/
-  scraper.ts    # Playwright → Status Invest
+  scraper.ts    # fetch + cheerio → Status Invest
   formatter.ts  # FIIData → JSON / Markdown
   types.ts      # Interfaces TypeScript
   index.ts      # CLI
@@ -136,3 +136,12 @@ public/
   index.html    # Dashboard (HTML/CSS/JS vanilla)
 output/         # Arquivos gerados pelo CLI
 ```
+
+## Footprint
+
+| | Valor |
+|---|---|
+| Imagem Docker | ~120 MB (node:22-alpine) |
+| RAM em execução | ~50 MB |
+| Tempo de resposta | 1–2 s |
+| Deps de produção | cheerio + fastify |
