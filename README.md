@@ -12,10 +12,11 @@ Inclui servidor REST, dashboard web com atualização automática e histórico p
 
 - Scraping leve do [Status Invest](https://statusinvest.com.br) via `fetch` + `cheerio` (sem browser headless)
 - Retorno de dados em JSON e Markdown
-- Servidor REST com `GET /fii/:ticker`
+- Servidor REST com `GET /fii/:ticker` e `GET /fiis` (lista padrão)
 - Dashboard web com atualização automática configurável
 - Histórico das últimas consultas por FII (localStorage)
 - Indicador de momento de compra baseado em P/VP, DY e tendência de preço
+- Carteira pessoal: registre cotas por FII, veja dividendo estimado mensal e total
 
 ## Pré-requisitos
 
@@ -89,6 +90,15 @@ PORT=8080 npm run server
 
 ## Docker
 
+### Imagem pré-compilada (recomendado)
+
+```bash
+docker pull ghcr.io/zclt/efedois:main
+docker run -p 3000:3000 ghcr.io/zclt/efedois:main
+```
+
+### Build local
+
 ```bash
 # Build e sobe na porta 3000
 docker compose up --build
@@ -97,8 +107,31 @@ docker compose up --build
 PORT=8080 docker compose up
 
 # Sem compose
-docker build -t fii-monitor .
-docker run -p 3000:3000 fii-monitor
+docker build -t efedois .
+docker run -p 3000:3000 efedois
+```
+
+### Variáveis de ambiente
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `PORT` | `3000` | Porta interna do container |
+| `HOST` | `0.0.0.0` | Interface de escuta |
+| `DEFAULT_FIIS` | `MXRF11` | Tickers padrão separados por vírgula |
+
+`DEFAULT_FIIS` define os FIIs retornados pelo `GET /fiis` e consultados pelo CLI quando nenhum ticker é passado.
+
+```bash
+# Porta 80 com lista de FIIs padrão
+docker run -p 80:3000 \
+  -e DEFAULT_FIIS="BTHF11,MXRF11,VGIR11,VISC11,XPLG11" \
+  ghcr.io/zclt/efedois:main
+
+# Verificar se a variável está aplicada
+docker run --rm ghcr.io/zclt/efedois:main env | grep DEFAULT_FIIS
+
+# Testar o endpoint de lista
+curl http://localhost/fiis
 ```
 
 ## Dashboard
@@ -109,6 +142,7 @@ docker run -p 3000:3000 fii-monitor
 | Intervalo de atualização | 30s, 1min, 2min, 5min, 10min — salvo no localStorage |
 | Histórico por card | Últimas 3 consultas exibidas, até 10 mantidas no localStorage |
 | Indicador de compra | Baseado em P/VP + DY 12M + tendência de preço |
+| Carteira | Cotas por FII (0–9999), dividendo estimado, total mensal no cabeçalho |
 
 ### Lógica do indicador de compra
 
