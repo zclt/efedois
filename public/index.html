@@ -50,13 +50,33 @@
       flex-wrap: wrap;
     }
 
+    .brand-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
     .brand {
       font-size: 1.1rem;
       font-weight: 700;
       color: var(--accent);
       white-space: nowrap;
-      padding-bottom: 4px;
     }
+
+    .portfolio-total-badge {
+      display: none;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--green);
+      background: var(--green-dim);
+      border: 1px solid rgba(63,185,80,0.3);
+      border-radius: 4px;
+      padding: 2px 7px;
+      white-space: nowrap;
+      width: fit-content;
+    }
+
+    .portfolio-total-badge.visible { display: block; }
 
     .field {
       display: flex;
@@ -458,7 +478,10 @@
 
 <header>
   <div class="header-row">
-    <div class="brand">📊 FII Monitor</div>
+    <div class="brand-wrap">
+      <div class="brand">📊 FII Monitor</div>
+      <div class="portfolio-total-badge" id="portfolio-total-badge"></div>
+    </div>
 
     <div class="field field-fiis">
       <label for="inp-fiis">FIIs monitorados (separados por vírgula)</label>
@@ -713,6 +736,23 @@ function renderCard(ticker) {
   </div>`;
 }
 
+function updatePortfolioTotal() {
+  let total = 0;
+  for (const ticker of cfg.fiis) {
+    const cotas = portfolio[ticker] ?? 0;
+    const data  = typeof cardState[ticker] === 'object' ? cardState[ticker] : null;
+    total += cotas * parseBR(data?.ultimo_dividendo);
+  }
+  const el = document.getElementById('portfolio-total-badge');
+  if (!el) return;
+  if (total > 0) {
+    el.textContent = `Carteira: R$ ${total.toFixed(2).replace('.', ',')} / mês`;
+    el.classList.add('visible');
+  } else {
+    el.classList.remove('visible');
+  }
+}
+
 function renderGrid() {
   const grid = document.getElementById('grid');
   if (cfg.fiis.length === 0) {
@@ -720,9 +760,11 @@ function renderGrid() {
       <h2>Nenhum FII configurado</h2>
       <p>Digite os tickers acima separados por vírgula para começar.</p>
     </div>`;
+    updatePortfolioTotal();
     return;
   }
   grid.innerHTML = cfg.fiis.map(renderCard).join('');
+  updatePortfolioTotal();
 }
 
 // ── Fetch ──────────────────────────────────────────────────────────────────
