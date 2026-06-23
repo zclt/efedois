@@ -535,8 +535,6 @@
 
 <script>
 // ── Constants ──────────────────────────────────────────────────────────────
-const CFG_KEY   = 'fiim_cfg';
-const HIST_KEY  = 'fiim_hist';
 const MAX_HIST  = 10;
 const HIST_SHOW = 3;
 
@@ -549,23 +547,34 @@ let timerId    = null;
 let countdown  = 0;
 
 // ── Storage ────────────────────────────────────────────────────────────────
-function loadCfg() {
-  try { Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY) || '{}')); } catch {}
+async function loadCfg() {
+  try {
+    const res = await fetch('/api/config');
+    if (res.ok) Object.assign(cfg, await res.json());
+  } catch {}
 }
 function saveCfg() {
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  fetch('/api/config', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cfg),
+  }).catch(() => {});
 }
-function loadHistory() {
-  try { history = JSON.parse(localStorage.getItem(HIST_KEY) || '{}'); } catch {}
-}
-function saveHistory() {
-  localStorage.setItem(HIST_KEY, JSON.stringify(history));
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/history');
+    if (res.ok) history = await res.json();
+  } catch {}
 }
 function pushHistory(ticker, data) {
   if (!history[ticker]) history[ticker] = [];
   history[ticker].unshift(data);
   history[ticker] = history[ticker].slice(0, MAX_HIST);
-  saveHistory();
+  fetch(`/api/history/${ticker}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).catch(() => {});
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -844,15 +853,14 @@ document.getElementById('btn-refresh').addEventListener('click', () => {
 });
 
 // ── Portfolio ──────────────────────────────────────────────────────────────
-const PORTFOLIO_KEY = 'fiim_portfolio';
 let portfolio   = {};
 let popupTicker = null;
 
-function loadPortfolio() {
-  try { portfolio = JSON.parse(localStorage.getItem(PORTFOLIO_KEY) || '{}'); } catch {}
-}
-function savePortfolio() {
-  localStorage.setItem(PORTFOLIO_KEY, JSON.stringify(portfolio));
+async function loadPortfolio() {
+  try {
+    const res = await fetch('/api/portfolio');
+    if (res.ok) portfolio = await res.json();
+  } catch {}
 }
 
 function findPaymentDate(dados) {
@@ -931,7 +939,11 @@ function savePopupEntry() {
   if (!popupTicker) return;
   const cotas = Math.max(0, Math.min(9999, parseInt(document.getElementById('popup-input').value) || 0));
   portfolio[popupTicker] = cotas;
-  savePortfolio();
+  fetch(`/api/portfolio/${encodeURIComponent(popupTicker)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cotas }),
+  }).catch(() => {});
   closePopup();
   renderGrid();
 }
@@ -948,21 +960,20 @@ document.getElementById('popup-input').addEventListener('keydown', e => {
 });
 
 // ── Init ───────────────────────────────────────────────────────────────────
-loadCfg();
-loadHistory();
-loadPortfolio();
+(async function init() {
+  await Promise.all([loadCfg(), loadHistory(), loadPortfolio()]);
 
-document.getElementById('inp-fiis').value = cfg.fiis.join(', ');
-document.getElementById('inp-interval').value = String(cfg.intervalSec);
+  document.getElementById('inp-fiis').value = cfg.fiis.join(', ');
+  document.getElementById('inp-interval').value = String(cfg.intervalSec);
 
-// Seed card states from existing history (so data shows immediately)
-cfg.fiis.forEach(t => {
-  cardState[t] = (history[t] || [])[0] || 'idle';
-});
+  cfg.fiis.forEach(t => {
+    cardState[t] = (history[t] || [])[0] || 'idle';
+  });
 
-renderGrid();
-startTimer();
-refreshAll();
+  renderGrid();
+  startTimer();
+  refreshAll();
+})();
 </script>
 </body>
 </html>

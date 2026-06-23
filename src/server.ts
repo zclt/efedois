@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import Fastify from "fastify";
 import { consultarFII } from "./scraper";
+import { getConfig, setConfig, getHistory, pushHistory, getPortfolio, setPortfolioEntry } from "./db";
 
 const server = Fastify({ logger: true });
 
@@ -53,6 +54,39 @@ server.get<{ Params: { ticker: string } }>(
     return reply.send(resultado.dados);
   }
 );
+
+// ── Config API ────────────────────────────────────────────────────────────
+server.get('/api/config', async () => getConfig());
+
+server.put('/api/config', async (request, reply) => {
+  const { fiis, intervalSec } = request.body as { fiis: string[]; intervalSec: number };
+  if (!Array.isArray(fiis) || typeof intervalSec !== 'number') {
+    return reply.status(400).send({ erro: 'payload inválido' });
+  }
+  setConfig(fiis, intervalSec);
+  return { ok: true };
+});
+
+// ── History API ───────────────────────────────────────────────────────────
+server.get('/api/history', async () => getHistory());
+
+server.post<{ Params: { ticker: string } }>('/api/history/:ticker', async (request) => {
+  const { ticker } = request.params;
+  return pushHistory(ticker.toUpperCase(), request.body as object);
+});
+
+// ── Portfolio API ─────────────────────────────────────────────────────────
+server.get('/api/portfolio', async () => getPortfolio());
+
+server.put<{ Params: { ticker: string } }>('/api/portfolio/:ticker', async (request, reply) => {
+  const { ticker } = request.params;
+  const { cotas } = request.body as { cotas: number };
+  if (typeof cotas !== 'number' || cotas < 0 || cotas > 9999) {
+    return reply.status(400).send({ erro: 'cotas inválido' });
+  }
+  setPortfolioEntry(ticker.toUpperCase(), Math.floor(cotas));
+  return { ok: true };
+});
 
 function resolveDefaultTickers(): string[] {
   const env = process.env.DEFAULT_FIIS;
