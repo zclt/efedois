@@ -50,13 +50,33 @@
       flex-wrap: wrap;
     }
 
+    .brand-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
     .brand {
       font-size: 1.1rem;
       font-weight: 700;
       color: var(--accent);
       white-space: nowrap;
-      padding-bottom: 4px;
     }
+
+    .portfolio-total-badge {
+      display: none;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--green);
+      background: var(--green-dim);
+      border: 1px solid rgba(63,185,80,0.3);
+      border-radius: 4px;
+      padding: 2px 7px;
+      white-space: nowrap;
+      width: fit-content;
+    }
+
+    .portfolio-total-badge.visible { display: block; }
 
     .field {
       display: flex;
@@ -344,13 +364,124 @@
       font-size: 0.72rem;
       border-top: 1px solid var(--border);
     }
+
+    /* ── Portfolio ───────────────────────────────────────── */
+    .c-portfolio {
+      cursor: pointer;
+      border-top: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .c-portfolio:hover { background: var(--surface-2); }
+    .c-portfolio-info { flex: 1; min-width: 0; }
+    .c-portfolio-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .c-portfolio-row {
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+    }
+    .c-portfolio-cotas { font-weight: 700; }
+    .c-portfolio-est   { color: var(--green); font-weight: 600; }
+    .c-portfolio-pgto  { color: var(--muted); font-size: 0.75rem; }
+    .c-portfolio-empty { font-size: 0.8rem; color: var(--muted); font-style: italic; }
+    .c-portfolio-pen   { font-size: 0.8rem; color: var(--muted); opacity: 0.45; flex-shrink: 0; }
+
+    /* ── Popup ───────────────────────────────────────────── */
+    .popup-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .popup-overlay.open { display: flex; }
+    .popup {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+      margin: 0 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    .popup-head { margin-bottom: 20px; }
+    .popup-ticker { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .popup-nome   { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .popup-field  { margin-bottom: 16px; }
+    .popup-field label {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .popup-input {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      width: 100%;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    .popup-input:focus { outline: none; border-color: var(--accent); }
+    .popup-input::-webkit-outer-spin-button,
+    .popup-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .popup-input { -moz-appearance: textfield; }
+    .popup-preview {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 20px;
+    }
+    .popup-preview-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      font-size: 0.82rem;
+    }
+    .popup-preview-lbl   { color: var(--muted); }
+    .popup-preview-val   { font-weight: 600; }
+    .popup-preview-total { color: var(--green); font-size: 1rem; }
+    .popup-actions { display: flex; gap: 8px; }
+    .popup-actions .btn { flex: 1; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface-2); opacity: 1; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="header-row">
-    <div class="brand">📊 FII Monitor</div>
+    <div class="brand-wrap">
+      <div class="brand">📊 FII Monitor</div>
+      <div class="portfolio-total-badge" id="portfolio-total-badge"></div>
+    </div>
 
     <div class="field field-fiis">
       <label for="inp-fiis">FIIs monitorados (separados por vírgula)</label>
@@ -382,6 +513,25 @@
 <footer>
   Dados: Status Invest &nbsp;·&nbsp; Não constitui recomendação de investimento
 </footer>
+
+<div class="popup-overlay" id="popup-overlay">
+  <div class="popup">
+    <div class="popup-head">
+      <div class="popup-ticker" id="popup-ticker"></div>
+      <div class="popup-nome"   id="popup-nome"></div>
+    </div>
+    <div class="popup-field">
+      <label for="popup-input">Cotas na carteira (0 – 9.999)</label>
+      <input type="number" class="popup-input" id="popup-input"
+             min="0" max="9999" step="1" inputmode="numeric">
+    </div>
+    <div class="popup-preview" id="popup-preview"></div>
+    <div class="popup-actions">
+      <button class="btn btn-ghost" id="popup-cancel">Cancelar</button>
+      <button class="btn"           id="popup-save">Salvar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -494,7 +644,8 @@ function renderCard(ticker) {
         <div><div class="c-ticker">${esc(ticker)}</div></div>
       </div>
       <div class="c-placeholder"><div class="spinner"></div><span>Consultando…</span></div>
-    </div>`;
+    ${renderPortfolioFooter(ticker, null)}
+  </div>`;
   }
 
   // ── error ──
@@ -508,7 +659,8 @@ function renderCard(ticker) {
         <span>Não foi possível obter dados</span>
         <small>Verifique o ticker ou aguarde a próxima atualização</small>
       </div>
-    </div>`;
+    ${renderPortfolioFooter(ticker, null)}
+  </div>`;
   }
 
   // ── data ──
@@ -580,7 +732,25 @@ function renderCard(ticker) {
         ${signal.reasons.map(r => `<li>${esc(r)}</li>`).join('')}
       </ul>
     </div>
+    ${renderPortfolioFooter(ticker, d)}
   </div>`;
+}
+
+function updatePortfolioTotal() {
+  let total = 0;
+  for (const ticker of cfg.fiis) {
+    const cotas = portfolio[ticker] ?? 0;
+    const data  = typeof cardState[ticker] === 'object' ? cardState[ticker] : null;
+    total += cotas * parseBR(data?.ultimo_dividendo);
+  }
+  const el = document.getElementById('portfolio-total-badge');
+  if (!el) return;
+  if (total > 0) {
+    el.textContent = `Carteira: R$ ${total.toFixed(2).replace('.', ',')} / mês`;
+    el.classList.add('visible');
+  } else {
+    el.classList.remove('visible');
+  }
 }
 
 function renderGrid() {
@@ -590,9 +760,11 @@ function renderGrid() {
       <h2>Nenhum FII configurado</h2>
       <p>Digite os tickers acima separados por vírgula para começar.</p>
     </div>`;
+    updatePortfolioTotal();
     return;
   }
   grid.innerHTML = cfg.fiis.map(renderCard).join('');
+  updatePortfolioTotal();
 }
 
 // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -671,9 +843,114 @@ document.getElementById('btn-refresh').addEventListener('click', () => {
   countdown = cfg.intervalSec;
 });
 
+// ── Portfolio ──────────────────────────────────────────────────────────────
+const PORTFOLIO_KEY = 'fiim_portfolio';
+let portfolio   = {};
+let popupTicker = null;
+
+function loadPortfolio() {
+  try { portfolio = JSON.parse(localStorage.getItem(PORTFOLIO_KEY) || '{}'); } catch {}
+}
+function savePortfolio() {
+  localStorage.setItem(PORTFOLIO_KEY, JSON.stringify(portfolio));
+}
+
+function findPaymentDate(dados) {
+  if (!dados?.dados_adicionais) return null;
+  const key = Object.keys(dados.dados_adicionais)
+    .find(k => /^data\s*(de\s*)?(pagamento|pgto)/i.test(k.trim()));
+  return key ? dados.dados_adicionais[key] : null;
+}
+
+function renderPortfolioFooter(ticker, data) {
+  const cotas      = portfolio[ticker] ?? 0;
+  const divPerCota = parseBR(data?.ultimo_dividendo);
+  const pgto       = findPaymentDate(data);
+  const total      = divPerCota > 0 ? (cotas * divPerCota).toFixed(2).replace('.', ',') : null;
+
+  const info = cotas === 0
+    ? `<span class="c-portfolio-empty">Adicionar posição…</span>`
+    : `<div class="c-portfolio-row">
+        <span class="c-portfolio-cotas">${cotas} cotas</span>
+        ${total !== null ? `<span class="c-portfolio-est">+ R$ ${total}</span>` : ''}
+        ${pgto ? `<span class="c-portfolio-pgto">pgto ${esc(pgto)}</span>` : ''}
+      </div>`;
+
+  return `<div class="c-portfolio" onclick="openPortfolioPopup('${esc(ticker)}')">
+    <div class="c-portfolio-info">
+      <div class="c-portfolio-label">Carteira</div>
+      ${info}
+    </div>
+    <span class="c-portfolio-pen">✏</span>
+  </div>`;
+}
+
+function openPortfolioPopup(ticker) {
+  popupTicker   = ticker;
+  const data    = typeof cardState[ticker] === 'object' ? cardState[ticker] : null;
+  document.getElementById('popup-ticker').textContent = ticker;
+  document.getElementById('popup-nome').textContent   = data?.nome ?? '';
+  document.getElementById('popup-input').value        = portfolio[ticker] ?? 0;
+  updatePopupPreview();
+  document.getElementById('popup-overlay').classList.add('open');
+  setTimeout(() => {
+    const inp = document.getElementById('popup-input');
+    inp.focus();
+    inp.select();
+  }, 50);
+}
+
+function closePopup() {
+  document.getElementById('popup-overlay').classList.remove('open');
+  popupTicker = null;
+}
+
+function updatePopupPreview() {
+  const data       = popupTicker && typeof cardState[popupTicker] === 'object' ? cardState[popupTicker] : null;
+  const cotas      = parseInt(document.getElementById('popup-input').value) || 0;
+  const divPerCota = parseBR(data?.ultimo_dividendo);
+  const total      = divPerCota > 0 ? (cotas * divPerCota).toFixed(2).replace('.', ',') : null;
+  const pgto       = findPaymentDate(data);
+
+  document.getElementById('popup-preview').innerHTML = `
+    <div class="popup-preview-row">
+      <span class="popup-preview-lbl">Últ. dividendo / cota</span>
+      <span class="popup-preview-val">${data?.ultimo_dividendo ? 'R$ ' + esc(data.ultimo_dividendo) : '—'}</span>
+    </div>
+    <div class="popup-preview-row">
+      <span class="popup-preview-lbl">Estimativa mensal</span>
+      <span class="popup-preview-val ${total !== null ? 'popup-preview-total' : ''}">${total !== null ? 'R$ ' + total : '—'}</span>
+    </div>
+    <div class="popup-preview-row">
+      <span class="popup-preview-lbl">Data de pagamento</span>
+      <span class="popup-preview-val">${pgto ? esc(pgto) : '—'}</span>
+    </div>`;
+}
+
+function savePopupEntry() {
+  if (!popupTicker) return;
+  const cotas = Math.max(0, Math.min(9999, parseInt(document.getElementById('popup-input').value) || 0));
+  portfolio[popupTicker] = cotas;
+  savePortfolio();
+  closePopup();
+  renderGrid();
+}
+
+document.getElementById('popup-cancel').addEventListener('click', closePopup);
+document.getElementById('popup-save').addEventListener('click', savePopupEntry);
+document.getElementById('popup-overlay').addEventListener('click', e => {
+  if (e.target.id === 'popup-overlay') closePopup();
+});
+document.getElementById('popup-input').addEventListener('input', updatePopupPreview);
+document.getElementById('popup-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') savePopupEntry();
+  if (e.key === 'Escape') closePopup();
+});
+
 // ── Init ───────────────────────────────────────────────────────────────────
 loadCfg();
 loadHistory();
+loadPortfolio();
 
 document.getElementById('inp-fiis').value = cfg.fiis.join(', ');
 document.getElementById('inp-interval').value = String(cfg.intervalSec);
