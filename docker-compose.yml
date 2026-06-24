@@ -7,6 +7,8 @@ services:
       PORT: "3000"
       HOST: "0.0.0.0"
       DEFAULT_FIIS: "${DEFAULT_FIIS:-MXRF11}"
+    volumes:
+      - monitor-data:/app/data
     restart: unless-stopped
     # healthcheck:
     #   test: ["CMD", "curl", "-f", "http://localhost:3000/fii/MXRF11"]
@@ -14,3 +16,6 @@ services:
     #   timeout: 30s
     #   retries: 3
     #   start_period: 10s
+
+volumes:
+  monitor-data:
