@@ -472,6 +472,35 @@
       border: 1px solid var(--border);
     }
     .btn-ghost:hover { background: var(--surface-2); opacity: 1; }
+
+    .zoom-controls {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .btn-zoom {
+      background: var(--surface-2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+      line-height: 1;
+    }
+    .btn-zoom:hover { background: var(--border); color: var(--text); }
+    .btn-zoom:disabled { opacity: 0.35; cursor: not-allowed; }
+    .zoom-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      min-width: 34px;
+      text-align: center;
+      align-self: center;
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body>
@@ -497,6 +526,12 @@
         <option value="300">5 min</option>
         <option value="600">10 min</option>
       </select>
+    </div>
+
+    <div class="zoom-controls">
+      <button class="btn-zoom" id="btn-zoom-out" title="Diminuir">A−</button>
+      <span class="zoom-label" id="zoom-label">90%</span>
+      <button class="btn-zoom" id="btn-zoom-in" title="Aumentar">A+</button>
     </div>
 
     <button class="btn" id="btn-refresh">⟳ Atualizar</button>
@@ -537,6 +572,30 @@
 // ── Constants ──────────────────────────────────────────────────────────────
 const MAX_HIST  = 10;
 const HIST_SHOW = 3;
+
+// ── Zoom ───────────────────────────────────────────────────────────────────
+const ZOOM_MIN  = 50;
+const ZOOM_MAX  = 130;
+const ZOOM_STEP = 10;
+
+let zoomPct = parseInt(localStorage.getItem('cardZoom') || '100', 10);
+
+function applyZoom() {
+  document.getElementById('grid').style.zoom = zoomPct + '%';
+  document.getElementById('zoom-label').textContent = zoomPct + '%';
+  document.getElementById('btn-zoom-out').disabled = zoomPct <= ZOOM_MIN;
+  document.getElementById('btn-zoom-in').disabled  = zoomPct >= ZOOM_MAX;
+  localStorage.setItem('cardZoom', zoomPct);
+}
+
+document.getElementById('btn-zoom-out').addEventListener('click', () => {
+  if (zoomPct > ZOOM_MIN) { zoomPct -= ZOOM_STEP; applyZoom(); }
+});
+document.getElementById('btn-zoom-in').addEventListener('click', () => {
+  if (zoomPct < ZOOM_MAX) { zoomPct += ZOOM_STEP; applyZoom(); }
+});
+
+applyZoom();
 
 // ── State ──────────────────────────────────────────────────────────────────
 let cfg        = { fiis: ['MXRF11', 'HGLG11'], intervalSec: 60 };
