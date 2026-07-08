@@ -22,6 +22,22 @@
       --radius:      8px;
     }
 
+    html.light {
+      --bg:          #ffffff;
+      --surface:     #f6f8fa;
+      --surface-2:   #eaeef2;
+      --border:      #d0d7de;
+      --text:        #1f2328;
+      --muted:       #656d76;
+      --accent:      #0969da;
+      --green:       #1a7f37;
+      --green-dim:   rgba(26,127,55,0.12);
+      --yellow:      #9a6700;
+      --yellow-dim:  rgba(154,103,0,0.12);
+      --red:         #d1242f;
+      --red-dim:     rgba(209,36,47,0.12);
+    }
+
     html { font-size: 90%; }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -530,9 +546,11 @@
 
     <div class="zoom-controls">
       <button class="btn-zoom" id="btn-zoom-out" title="Diminuir">A−</button>
-      <span class="zoom-label" id="zoom-label">90%</span>
+      <span class="zoom-label" id="zoom-label">100%</span>
       <button class="btn-zoom" id="btn-zoom-in" title="Aumentar">A+</button>
     </div>
+
+    <button class="btn-zoom" id="btn-theme" title="Alternar tema">🌙</button>
 
     <button class="btn" id="btn-refresh">⟳ Atualizar</button>
   </div>
@@ -596,6 +614,22 @@ document.getElementById('btn-zoom-in').addEventListener('click', () => {
 });
 
 applyZoom();
+
+// ── Theme ──────────────────────────────────────────────────────────────────
+let theme = localStorage.getItem('theme') || 'dark';
+
+function applyTheme() {
+  document.documentElement.classList.toggle('light', theme === 'light');
+  document.getElementById('btn-theme').textContent = theme === 'dark' ? '🌙' : '☀️';
+}
+
+document.getElementById('btn-theme').addEventListener('click', () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', theme);
+  applyTheme();
+});
+
+applyTheme();
 
 // ── State ──────────────────────────────────────────────────────────────────
 let cfg        = { fiis: ['MXRF11', 'HGLG11'], intervalSec: 60 };
