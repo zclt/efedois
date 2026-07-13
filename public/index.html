@@ -493,11 +493,14 @@
     }
     .btn-ghost:hover { background: var(--surface-2); opacity: 1; }
 
-    .zoom-controls {
+    .zoom-controls,
+    .sort-controls {
       display: flex;
       align-items: flex-end;
       gap: 4px;
     }
+
+    .sort-controls .field { min-width: 150px; }
     .btn-zoom {
       background: var(--surface-2);
       color: var(--muted);
@@ -546,6 +549,19 @@
         <option value="300">5 min</option>
         <option value="600">10 min</option>
       </select>
+    </div>
+
+    <div class="sort-controls">
+      <div class="field">
+        <label for="inp-sort">Ordenar por</label>
+        <select id="inp-sort">
+          <option value="none">Padrão (arrastar)</option>
+          <option value="preco">Cotação</option>
+          <option value="cotas">Cotas na carteira</option>
+          <option value="nome">Nome</option>
+        </select>
+      </div>
+      <button class="btn-zoom" id="btn-sort-dir" title="Inverter ordem">▲</button>
     </div>
 
     <div class="zoom-controls">
@@ -634,6 +650,55 @@ document.getElementById('btn-theme').addEventListener('click', () => {
 });
 
 applyTheme();
+
+// ── Sort ───────────────────────────────────────────────────────────────────
+let sortBy  = localStorage.getItem('sortBy')  || 'none';
+let sortDir = localStorage.getItem('sortDir') || 'asc';
+
+function applySortControls() {
+  document.getElementById('inp-sort').value = sortBy;
+  document.getElementById('btn-sort-dir').textContent = sortDir === 'asc' ? '▲' : '▼';
+  document.getElementById('btn-sort-dir').disabled = sortBy === 'none';
+}
+
+document.getElementById('inp-sort').addEventListener('change', e => {
+  sortBy = e.target.value;
+  localStorage.setItem('sortBy', sortBy);
+  applySortControls();
+  renderGrid();
+});
+
+document.getElementById('btn-sort-dir').addEventListener('click', () => {
+  sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  localStorage.setItem('sortDir', sortDir);
+  applySortControls();
+  renderGrid();
+});
+
+applySortControls();
+
+function getSortedTickers() {
+  if (sortBy === 'none') return [...cfg.fiis];
+
+  const dir = sortDir === 'asc' ? 1 : -1;
+  const keyFor = ticker => {
+    const d = typeof cardState[ticker] === 'object' ? cardState[ticker] : null;
+    if (sortBy === 'nome')  return d?.nome ?? ticker;
+    if (sortBy === 'preco') return d ? parseBR(d.preco_atual) : null;
+    if (sortBy === 'cotas') return portfolio[ticker] ?? 0;
+    return null;
+  };
+
+  return [...cfg.fiis].sort((a, b) => {
+    const ka = keyFor(a), kb = keyFor(b);
+    if (sortBy === 'nome') return String(ka).localeCompare(String(kb), 'pt-BR') * dir;
+    // numeric: missing data always sinks to the end, regardless of direction
+    if (ka === null && kb === null) return 0;
+    if (ka === null) return 1;
+    if (kb === null) return -1;
+    return (ka - kb) * dir;
+  });
+}
 
 // ── State ──────────────────────────────────────────────────────────────────
 let cfg        = { fiis: ['MXRF11', 'HGLG11'], intervalSec: 60 };
@@ -745,7 +810,7 @@ function renderCard(ticker) {
 
   // ── loading / idle ──
   if (state === 'loading' || state === 'idle') {
-    return `<div class="card" id="card-${ticker}" draggable="true" data-ticker="${esc(ticker)}">
+    return `<div class="card" id="card-${ticker}" draggable="${sortBy === 'none'}" data-ticker="${esc(ticker)}">
       <div class="c-head">
         <div><div class="c-ticker">${esc(ticker)}</div></div>
       </div>
@@ -756,7 +821,7 @@ function renderCard(ticker) {
 
   // ── error ──
   if (state === 'error') {
-    return `<div class="card" id="card-${ticker}" draggable="true" data-ticker="${esc(ticker)}">
+    return `<div class="card" id="card-${ticker}" draggable="${sortBy === 'none'}" data-ticker="${esc(ticker)}">
       <div class="c-head">
         <div><div class="c-ticker">${esc(ticker)}</div></div>
       </div>
@@ -789,7 +854,7 @@ function renderCard(ticker) {
         </div>`;
       }).join('');
 
-  return `<div class="card${isRef ? ' card-updating' : ''}" id="card-${ticker}" draggable="true" data-ticker="${esc(ticker)}">
+  return `<div class="card${isRef ? ' card-updating' : ''}" id="card-${ticker}" draggable="${sortBy === 'none'}" data-ticker="${esc(ticker)}">
 
     <div class="c-head">
       <div>
@@ -869,7 +934,7 @@ function renderGrid() {
     updatePortfolioTotal();
     return;
   }
-  grid.innerHTML = cfg.fiis.map(renderCard).join('');
+  grid.innerHTML = getSortedTickers().map(renderCard).join('');
   updatePortfolioTotal();
 }
 
