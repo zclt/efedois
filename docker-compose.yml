@@ -7,6 +7,11 @@ services:
       PORT: "3000"
       HOST: "0.0.0.0"
       DEFAULT_FIIS: "${DEFAULT_FIIS:-MXRF11}"
+      NTFY_TOPIC: "${NTFY_TOPIC:-}"
+      NTFY_SERVER: "${NTFY_SERVER:-https://ntfy.sh}"
+      NTFY_TOKEN: "${NTFY_TOKEN:-}"
+      NTFY_INTERVAL_SEC: "${NTFY_INTERVAL_SEC:-300}"
+      NTFY_PRICE_THRESHOLD: "${NTFY_PRICE_THRESHOLD:-2}"
     volumes:
       - monitor-data:/app/data
     restart: unless-stopped

@@ -3,6 +3,8 @@ import path from "path";
 import Fastify from "fastify";
 import { consultarFII } from "./scraper";
 import { getConfig, setConfig, getHistory, pushHistory, getPortfolio, setPortfolioEntry } from "./db";
+import { notify, ntfyEnabled } from "./notifier";
+import { startMonitor } from "./monitor";
 
 const server = Fastify({ logger: true });
 
@@ -88,6 +90,15 @@ server.put<{ Params: { ticker: string } }>('/api/portfolio/:ticker', async (requ
   return { ok: true };
 });
 
+// ── Notify API ────────────────────────────────────────────────────────────
+server.post('/api/notify/test', async (_, reply) => {
+  if (!ntfyEnabled()) {
+    return reply.status(400).send({ erro: 'NTFY_TOPIC não definido' });
+  }
+  await notify({ title: 'FII Monitor', message: 'Notificação de teste', tags: ['white_check_mark'] });
+  return { ok: true };
+});
+
 function resolveDefaultTickers(): string[] {
   const env = process.env.DEFAULT_FIIS;
   if (env) return env.split(",").map((t) => t.trim()).filter(Boolean);
@@ -111,4 +122,8 @@ server.listen({ port: PORT, host: HOST }, (err) => {
     server.log.error(err);
     process.exit(1);
   }
+  startMonitor({
+    info: (msg) => server.log.info(msg),
+    error: (msg) => server.log.error(msg),
+  });
 });
