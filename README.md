@@ -17,6 +17,7 @@ Inclui servidor REST, dashboard web com atualização automática e dados persis
 - Histórico das últimas consultas por FII persistido em SQLite
 - Indicador de momento de compra baseado em P/VP, DY e tendência de preço
 - Carteira pessoal: registre cotas por FII, veja dividendo estimado mensal e total
+- Notificações push via [ntfy.sh](https://ntfy.sh) quando o status de um FII muda (preço, dividendo, sinal de compra)
 
 ---
 
@@ -121,6 +122,7 @@ services:
       - "3000:3000"        # troque 3000 pela porta desejada no host
     environment:
       DEFAULT_FIIS: "MXRF11,HGLG11,XPLG11,VISC11,BTHF11"
+      NTFY_TOPIC: "meu-topico-secreto-123"   # opcional — ativa notificações
     volumes:
       - monitor-data:/app/data
     restart: unless-stopped
@@ -192,6 +194,7 @@ curl http://localhost:3000/fiis
 | `POST` | `/api/history/:ticker` | Registra novo snapshot |
 | `GET` | `/api/portfolio` | Carteira (ticker → cotas) |
 | `PUT` | `/api/portfolio/:ticker` | Atualiza cotas de um ticker |
+| `POST` | `/api/notify/test` | Envia uma notificação de teste ao tópico ntfy |
 
 ---
 
@@ -202,6 +205,11 @@ curl http://localhost:3000/fiis
 | `PORT` | `3000` | Porta interna do container |
 | `HOST` | `0.0.0.0` | Interface de escuta |
 | `DEFAULT_FIIS` | `MXRF11` | Tickers padrão separados por vírgula |
+| `NTFY_TOPIC` | — | Tópico do ntfy. Se vazio, as notificações ficam desativadas |
+| `NTFY_SERVER` | `https://ntfy.sh` | Servidor ntfy (para instâncias self-hosted) |
+| `NTFY_TOKEN` | — | Token de acesso, se o tópico for protegido |
+| `NTFY_INTERVAL_SEC` | `300` | Intervalo entre verificações do monitor |
+| `NTFY_PRICE_THRESHOLD` | `2` | Variação de preço (%) que dispara notificação |
 
 ---
 
@@ -230,6 +238,29 @@ Pontuação: P/VP abaixo do VPA (+1 a +3), DY acima de 9% (+1 a +2), preço em q
 
 ---
 
+## Notificações (ntfy)
+
+Com `NTFY_TOPIC` definido, o servidor roda um monitor em segundo plano — independente do dashboard estar aberto — que consulta os FIIs configurados no dashboard a cada `NTFY_INTERVAL_SEC` e publica no tópico quando houver:
+
+| Alteração | Critério |
+|---|---|
+| 📈/📉 Preço | Variação ≥ `NTFY_PRICE_THRESHOLD`% em relação ao preço da última notificação |
+| 💰 Dividendo | `ultimo_dividendo` diferente do último valor visto |
+| Sinal de compra | Mudança de faixa do indicador (ex.: Neutro → Bom para comprar) |
+
+Alterações do mesmo FII são agrupadas em uma única notificação. Na primeira consulta de cada ticker só é registrada a linha de base, sem notificar.
+
+```bash
+NTFY_TOPIC=meu-topico-secreto-123 npm run server
+
+# Testar
+curl -X POST http://localhost:3000/api/notify/test
+```
+
+Assine o tópico no app do ntfy (Android/iOS) ou em `https://ntfy.sh/<tópico>`. Tópicos no ntfy.sh são públicos — use um nome difícil de adivinhar.
+
+> Um dividendo com o mesmo valor do mês anterior não é detectado como novo, pois só o valor é comparado.
+
 ## Estrutura
 
 ```
@@ -237,7 +268,10 @@ src/
   scraper.ts    # fetch + cheerio → Status Invest
   formatter.ts  # FIIData → JSON / Markdown
   types.ts      # Interfaces TypeScript
-  db.ts         # SQLite (better-sqlite3) — config, histórico, carteira
+  db.ts         # SQLite (better-sqlite3) — config, histórico, carteira, estado das notificações
+  signal.ts     # Indicador de compra (espelha o do dashboard)
+  notifier.ts   # Publicação no ntfy
+  monitor.ts    # Loop de verificação e detecção de alterações
   index.ts      # CLI
   server.ts     # Servidor Fastify (REST + dashboard + API de persistência)
 public/

@@ -22,6 +22,10 @@ db.exec(`
     ticker TEXT PRIMARY KEY,
     cotas  INTEGER NOT NULL DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS notify_state (
+    ticker TEXT PRIMARY KEY,
+    data   TEXT NOT NULL
+  );
 `);
 
 const MAX_HIST = 10;
@@ -74,6 +78,21 @@ export function pushHistory(ticker: string, data: object): object[] {
   return (db.prepare(
     'SELECT data FROM history WHERE ticker = ? ORDER BY consultado_em DESC LIMIT ?'
   ).all(ticker, MAX_HIST) as HistRow[]).map(r => JSON.parse(r.data));
+}
+
+export function getTickerHistory(ticker: string, limit = MAX_HIST): object[] {
+  return (db.prepare(
+    'SELECT data FROM history WHERE ticker = ? ORDER BY consultado_em DESC LIMIT ?'
+  ).all(ticker, limit) as HistRow[]).map(r => JSON.parse(r.data));
+}
+
+export function getNotifyState<T>(ticker: string): T | null {
+  const row = db.prepare('SELECT data FROM notify_state WHERE ticker = ?').get(ticker) as HistRow | undefined;
+  return row ? JSON.parse(row.data) : null;
+}
+
+export function setNotifyState(ticker: string, state: object): void {
+  db.prepare('INSERT OR REPLACE INTO notify_state (ticker, data) VALUES (?, ?)').run(ticker, JSON.stringify(state));
 }
 
 export function getPortfolio(): Record<string, number> {
